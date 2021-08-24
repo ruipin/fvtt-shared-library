@@ -23,6 +23,7 @@ const MAIN_KEY_SEPARATOR = ':';
 const KEY_SEPARATORS = [':','~'];
 const UNKNOWN_ID = '\u00ABunknown\u00BB';
 const PACKAGE_ID_REGEX = new RegExp("^[a-z0-9_-]+$", "i");
+const STACK_TRACE_REGEX = /^.*?\/(worlds|systems|modules)\/(.+?)(?=\/).*?$/igm;
 
 // A package ID string, or an array of package ID strings, that should be ignored when automatically detecting the package ID based on a stack trace.
 // Not set as a constant, so that a default value can be set by the user
@@ -49,7 +50,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 	}
 
 	// Apply regex onto stack trace
-	const matches = stack_trace.matchAll(/\/(worlds|systems|modules)\/(.+?)(?=\/)/ig);
+	const matches = stack_trace.matchAll(STACK_TRACE_REGEX);
 	if(!matches)
 		return;
 
@@ -57,6 +58,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 	for(const match of matches) {
 		const type = match[1];
 		const name = match[2];
+
 		if(!type || !name)
 			continue;
 
@@ -94,7 +96,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 		}
 
 		// On match, call matchFn, and return if it returns 'false'
-		const matchRes = matchFn(match_id, match_type);
+		const matchRes = matchFn(match_id, match_type, match[0]);
 		if(matchRes === false)
 			return false;
 	}
@@ -114,21 +116,30 @@ export class PackageInfo {
 		new PackageInfo(UNKNOWN_ID, PACKAGE_TYPES.UNKNOWN);
 	};
 
-	static collect_all(stack_trace=undefined, ignore_ids=undefined) {
-		const modules = [];
+	static collect_all(stack_trace=undefined, include_fn=undefined, ignore_ids=undefined) {
+		// Collect a set of all packages in the stack trace
+		const set = new Set();
 
-		foreach_package_in_stack_trace((id, type) => {
-			const new_mdl = new PackageInfo(id, type);
+		foreach_package_in_stack_trace((id, type, match) => {
+			const key = `${type.lower}${MAIN_KEY_SEPARATOR}${id}`; // see 'get key' below
 
-			for(const mdl of modules) {
-				if(mdl.equals(new_mdl))
+			if(set.has(key))
+				return true;
+
+			if(include_fn !== undefined && !include_fn(id, type, match))
 					return true;
-			}
 
-			modules.push(new_mdl);
+			set.add(key);
 			return true;
 		}, stack_trace, ignore_ids);
 
+		// Convert the set into an array of PackageInfo objects
+		const modules = [];
+
+		for(const key of set)
+			modules.push(new PackageInfo(key));
+
+		// Done
 		return modules;
 	}
 
@@ -313,6 +324,10 @@ export class PackageInfo {
 	get logStringCapitalized() {
 		let str = this.logString;
 		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+
+	get logId() {
+		return (this.type == PACKAGE_TYPES.MODULE) ? this.id : this.key;
 	}
 
 	get settingsName() {
