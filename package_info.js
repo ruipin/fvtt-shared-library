@@ -5,6 +5,7 @@
 
 import {PACKAGE_ID, PACKAGE_TITLE} from '../consts.js';
 import {Enum} from './enums.js';
+import {i18n} from './i18n.js';
 
 
 //*********************
@@ -296,9 +297,13 @@ export class PackageInfo {
 		}
 	}
 
+	static get unknown_title() {
+		return i18n.localize(`${PACKAGE_ID}.packages.unknown-title`)
+	}
+
 	get title() {
 		if(!this.exists)
-			return 'Unknown';
+			return this.unknown_title;
 
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
@@ -306,7 +311,7 @@ export class PackageInfo {
 			case PACKAGE_TYPES.WORLD :
 				return this.data.title;
 			default:
-				return 'Unknown';
+				return this.unknown_title;
 		}
 	}
 
@@ -314,16 +319,29 @@ export class PackageInfo {
 		return `${this.type.lower}${MAIN_KEY_SEPARATOR}${this.id}`;
 	}
 
-	get logString() {
-		if(!this.known)
-			return 'an unknown package';
-
-		return `${this.type.lower} '${this.id}'`;
+	get type_i18n() {
+		return i18n.localize(`${PACKAGE_ID}.packages.types.${this.type.lower}`);
 	}
 
-	get logStringCapitalized() {
-		let str = this.logString;
+	get type_plus_id() {
+		return `${this.type.lower} ${this.id}`;
+	}
+
+	get type_plus_id_capitalized() {
+		let str = this.type_plus_id;
 		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+
+	get type_plus_id_i18n() {
+		return i18n.format(`${PACKAGE_ID}.packages.type-plus-id`, {type: this.type_i18n, id: this.id});
+	}
+
+	get type_plus_title() {
+		return `${this.type.lower} ${this.title}`;
+	}
+
+	get type_plus_title_i18n() {
+		return i18n.format(`${PACKAGE_ID}.packages.type-plus-title`, {type: this.type_i18n, title: this.title});
 	}
 
 	get logId() {
@@ -341,6 +359,47 @@ export class PackageInfo {
 			default:
 				return this.id;
 		}
+	}
+
+	get url() {
+		return this.data?.url;
+	}
+
+	get bugs() {
+		return this.data?.bugs;
+	}
+
+	get version() {
+		return this.data?.version;
+	}
+
+	get core_version_range() {
+		const data = this.data;
+		if(!data)
+			return null;
+
+		return [data.minimumCoreVersion, data.compatibleCoreVersion];
+	}
+
+	get compatible_with_core() {
+		const versions = this.core_version_range;
+		const game_data_version = game?.data?.version;
+		if(!versions || !game_data_version)
+			true; // assume it is compatible if we aren't sure
+
+		// Check if the core version is between the minimum and maximum version
+		const [min, max] = versions;
+
+		// Minimum version
+		if(min && min !== game_data_version && !isNewerVersion(game_data_version, min))
+			return false;
+
+		// Maximum version
+		if(max && isNewerVersion(game_data_version, max))
+			return false;
+
+		// Done
+		return true;
 	}
 }
 Object.freeze(PackageInfo);
