@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { IS_UNITTEST } from "../consts.js";
+import { IS_UNITTEST, PACKAGE_TITLE } from "../consts.js";
 
 
 // We want to load the EN language by default, in order to use it for polyfill when i18n hasn't loaded yet
@@ -44,7 +44,7 @@ export class i18n {
 			this.json = await request.json();
 		}
 		catch(e) {
-			console.warn(`${PACKAGE_TITLE}: Failed to load or parse ${url.href}. Defaulting to built-in english translation until Foundry's i18n library initialises.`);
+			console.debug(`${PACKAGE_TITLE}: Failed to load or parse ${url.href}. Defaulting to built-in english translation until Foundry's i18n library initialises.`);
 		}
 	}
 
