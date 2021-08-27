@@ -6,45 +6,81 @@
 import { IS_UNITTEST, PACKAGE_TITLE } from "../consts.js";
 
 
-// We want to load the EN language by default, in order to use it for polyfill when i18n hasn't loaded yet
+// We want to load the EN language by default, in order to use it for polyfill while i18n hasn't loaded yet
 // The import/fetch below will allow Rollup, with rollup-plugin-json and rollup-plugin-jscc, to directly include the JSON contents into the build artifact
 // but also still allow libWrapper to work fine without the rollup step.
 
 /*#if _ROLLUP
-import en from '../../lang/en.json';
+import en_json from '../../lang/en.json';
 //#else */
-let en;
+let en_json;
 if(IS_UNITTEST) {
 	// Use readFileSync, supported by node
 	const fs = await import('fs');
 	let en_file = fs.readFileSync('lang/en.json');
-	en = JSON.parse(en_file);
+	en_json = JSON.parse(en_file);
 }
 else {
 	// Use fetch - supported by browsers
 	const request = await fetch(new URL('../../lang/en.json', import.meta.url));
-	en = await request.json();
+	en_json = await request.json();
 }
 //#endif
 
 
 // Polyfill game.i18n until libWrapper initialises
 export class i18n {
-	static async init() {
-		const lang = game?.i18n?.lang;
-		if(!lang || lang === "en") // no need to fetch the english JSON since we already include it in our artifact
-			return;
-
-		const url = new URL(`../../lang/${lang}.json`, import.meta.url);
+	static async _fetch(lang) {
+		// Fetch language JSONs, if any
 		try {
-			const request = await fetch();
-			if(request.status !== 200 || !request.ok)
-				return;
+			const url = new URL(`../../lang/${lang}.json`, import.meta.url);
 
-			this.json = await request.json();
+			const request = await fetch(url);
+			if(request.status !== 200 || !request.ok)
+				return null;
+
+			return request.json();
 		}
 		catch(e) {
-			console.debug(`${PACKAGE_TITLE}: Failed to load or parse ${url.href}. Defaulting to built-in english translation until Foundry's i18n library initialises.`);
+			console.warn(`${PACKAGE_TITLE}: Failed to load or parse ${url.href}.`, e);
+			return null;
+		}
+	}
+
+	static async init() {
+		// Default members
+		this.jsons = [];
+
+		// Load languages
+		const langs = [];
+
+		try {
+			// client-scoped setting, but we do this before game.settings has initialised so have to grab it manually
+			const clientLanguageSetting = localStorage?.['core.language'];
+			if(clientLanguageSetting) {
+				const clientLanguage = JSON.parse(clientLanguageSetting);
+				if(clientLanguage && clientLanguage !== 'en')
+					langs.push(clientLanguage);
+			}
+		}
+		catch(e) {
+			console.debug(`${PACKAGE_TITLE}: Could not find or parse client language settings.`);
+		}
+
+		const serverLanguage = game?.i18n?.lang;
+		if(serverLanguage && serverLanguage !== 'en')
+			langs.push(serverLanguage);
+
+		// Fetch language JSONs
+		if(langs.length > 0) {
+			// Await all fetches
+			const results = await Promise.all(langs.map((x)=>this._fetch(x)));
+
+			// Store the valid results in this.jsons
+			for(const json of results) {
+				if(json)
+					this.jsons.push(json);
+			}
 		}
 	}
 
@@ -61,14 +97,16 @@ export class i18n {
 			const split = key.split('.');
 
 			// Try main language first
-			if(this.json) {
-				const res = split.reduce((x,y) => x?.[y], this.json);
-				if(res)
-					return res;
+			if(this.jsons) {
+				for(const json of this.jsons) {
+					const res = split.reduce((x,y) => x?.[y], json);
+					if(res)
+						return res;
+				}
 			}
 
-			// Default to built-in english translation
-			return split.reduce((x,y) => x?.[y], en) ?? key;
+			// Default to just returning the key
+			return split.reduce((x,y) => x?.[y], en_json) ?? key;
 		}
 		catch(e) {
 			console.error(e);
