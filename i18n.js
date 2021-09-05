@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { IS_UNITTEST, PACKAGE_TITLE } from "../consts.js";
+import { IS_UNITTEST, PACKAGE_ID, PACKAGE_TITLE } from "../consts.js";
 
 
 // We want to load the EN language by default, in order to use it for polyfill while i18n hasn't loaded yet
@@ -12,17 +12,20 @@ import { IS_UNITTEST, PACKAGE_TITLE } from "../consts.js";
 
 /*#if _ROLLUP
 import en_json from '../../lang/en.json';
+const i18nLangs = $_I18N_LANGS;
+const langBaseUrl = (!import.meta?.url?.endsWith(`dist/${PACKAGE_ID}.js`)) ? './lang' : '../lang';
 //#else */
+const langBaseUrl = '../../lang';
 let en_json;
 if(IS_UNITTEST) {
 	// Use readFileSync, supported by node
 	const fs = await import('fs');
-	let en_file = fs.readFileSync('lang/en.json');
+	const en_file = fs.readFileSync('lang/en.json'); // readFileSync does not use a relative path
 	en_json = JSON.parse(en_file);
 }
 else {
 	// Use fetch - supported by browsers
-	const request = await fetch(new URL('../../lang/en.json', import.meta.url));
+	const request = await fetch(new URL(`${langBaseUrl}/en.json`, import.meta.url));
 	en_json = await request.json();
 }
 //#endif
@@ -31,9 +34,15 @@ else {
 // Polyfill game.i18n until libWrapper initialises
 export class i18n {
 	static async _fetch(lang) {
+		/*#if _ROLLUP
+		// Avoid unnecessary requests if we know they're just going to 404
+		if(Array.isArray(i18nLangs) && !i18nLangs.includes(lang))
+			return null;
+		//#endif */
+
 		// Fetch language JSONs, if any
 		try {
-			const url = new URL(`../../lang/${lang}.json`, import.meta.url);
+			const url = new URL(`${langBaseUrl}/${lang}.json`, import.meta.url);
 
 			const request = await fetch(url);
 			if(request.status !== 200 || !request.ok)
