@@ -80,3 +80,32 @@ export const game_user_isGM = function(return_null=false) {
 	// Done
 	return user_data.role === 4;
 }
+
+// Polyfill to get the Foundry version regardless of version
+export const game_release_display = function(return_null=true) {
+	const display =
+		game?.release?.display ??
+		game?.version          ??
+		game?.data?.version    ??
+		null
+	;
+
+	if(!return_null && display === null)
+		throw new InternalError("Unable to obtain the Foundry display version");
+
+	return display;
+}
+
+export const game_version = function(return_null=true) {
+	const version =
+		game?.version          ??
+		game?.release?.version ??
+		game?.data?.version    ??
+		null
+	;
+
+	if(!return_null && version === null)
+		throw new InternalError("Unable to obtain the Foundry version");
+
+	return version;
+}

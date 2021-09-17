@@ -6,6 +6,7 @@
 import {PACKAGE_ID, PACKAGE_TITLE} from '../consts.js';
 import {Enum} from './enums.js';
 import {i18n} from './i18n.js';
+import {game_version} from './polyfill.js';
 
 
 //*********************
@@ -383,19 +384,19 @@ export class PackageInfo {
 
 	get compatible_with_core() {
 		const versions = this.core_version_range;
-		const game_data_version = game?.data?.version;
-		if(!versions || !game_data_version)
+		const fvtt_version = game_version(/*return_null=*/ true);
+		if(!versions || !fvtt_version)
 			true; // assume it is compatible if we aren't sure
 
 		// Check if the core version is between the minimum and maximum version
 		const [min, max] = versions;
 
 		// Minimum version
-		if(min && min !== game_data_version && !isNewerVersion(game_data_version, min))
+		if(min && min !== fvtt_version && !isNewerVersion(fvtt_version, min))
 			return false;
 
 		// Maximum version
-		if(max && isNewerVersion(game_data_version, max))
+		if(max && isNewerVersion(fvtt_version, max))
 			return false;
 
 		// Done
