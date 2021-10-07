@@ -386,7 +386,7 @@ export class PackageInfo {
 		const versions = this.core_version_range;
 		const fvtt_version = game_version(/*return_null=*/ true);
 		if(!versions || !fvtt_version)
-			true; // assume it is compatible if we aren't sure
+			return true; // assume it is compatible if we aren't sure
 
 		// Check if the core version is between the minimum and maximum version
 		const [min, max] = versions;
