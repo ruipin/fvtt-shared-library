@@ -8,7 +8,7 @@ import {PACKAGE_TITLE, PACKAGE_ID} from '../consts.js';
 
 //*********************
 // Versioning
-const throw_error = (msg) => { throw `${PACKAGE_TITLE}: ${msg}.\nFoundry might not have initialized properly, please try refreshing.` };
+const throw_error = (msg) => { throw new Error(`${PACKAGE_TITLE}: ${msg}.\nFoundry might not have initialized properly, please try refreshing.`) };
 
 // This allows rollup to optimise the version-related code
 /*#if _ROLLUP

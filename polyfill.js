@@ -3,7 +3,7 @@
 
 'use strict';
 
-import {InternalError} from '../errors/base_errors.js';
+import { ERRORS } from '../errors/errors.js';
 
 
 // game.user.data polyfill, so it can be used before 'ready'
@@ -18,7 +18,7 @@ export const game_user_data = function(return_null=false) {
 	if(!userid) {
 		if(return_null)
 			return null;
-		throw new InternalError("Unable to obtain the current user ID");
+		throw new ERRORS.internal("Unable to obtain the current user ID");
 	}
 
 	// Find user in game.data.users
@@ -26,7 +26,7 @@ export const game_user_data = function(return_null=false) {
 	if(!user_data) {
 		if(return_null)
 			return null;
-		throw new InternalError("Unable to obtain the current user data object");
+		throw new ERRORS.internal("Unable to obtain the current user data object");
 	}
 
 	// Done
@@ -81,7 +81,7 @@ export const game_user_isGM = function(return_null=false) {
 	return user_data.role === 4;
 }
 
-// Polyfill to get the Foundry version regardless of version
+// Polyfill to get the Foundry version
 export const game_release_display = function(return_null=true) {
 	const display =
 		game?.release?.display ??
@@ -91,7 +91,7 @@ export const game_release_display = function(return_null=true) {
 	;
 
 	if(!return_null && display === null)
-		throw new InternalError("Unable to obtain the Foundry display version");
+		throw new ERRORS.internal("Unable to obtain the Foundry display version");
 
 	return display;
 }
@@ -105,7 +105,7 @@ export const game_version = function(return_null=true) {
 	;
 
 	if(!return_null && version === null)
-		throw new InternalError("Unable to obtain the Foundry version");
+		throw new ERRORS.internal("Unable to obtain the Foundry version");
 
 	return version;
 }

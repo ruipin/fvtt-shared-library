@@ -46,10 +46,10 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 		finally {
 			Error.stackTraceLimit = old_stack_limit;
 		}
-
-		if(!stack_trace)
-			throw `${PACKAGE_TITLE}: Could not collect stack trace.`
 	}
+
+	if(!stack_trace || typeof stack_trace !== 'string')
+		throw new Error(`${PACKAGE_TITLE}: Could not collect stack trace.`);
 
 	// Apply regex onto stack trace
 	const matches = stack_trace.matchAll(STACK_TRACE_REGEX);
@@ -115,7 +115,7 @@ export class PackageInfo {
 	 * Static methods
 	 */
 	static get UNKNOWN() {
-		new PackageInfo(UNKNOWN_ID, PACKAGE_TYPES.UNKNOWN);
+		return new PackageInfo(UNKNOWN_ID, PACKAGE_TYPES.UNKNOWN);
 	};
 
 	static collect_all(stack_trace=undefined, include_fn=undefined, ignore_ids=undefined) {
@@ -145,6 +145,16 @@ export class PackageInfo {
 		return modules;
 	}
 
+	static is_valid_id(id) {
+		if(!id || typeof id !== 'string')
+			return false;
+
+		if(!PACKAGE_ID_REGEX.test(id))
+			return false;
+
+		return true;
+	}
+
 
 	/*
 	 * Constructor
@@ -164,21 +174,27 @@ export class PackageInfo {
 
 		// Sanity check the ID
 		if(typeof id !== 'string')
-			throw `${PACKAGE_TITLE}: PackageInfo IDs must be strings`;
+			throw new Error(`${PACKAGE_TITLE}: PackageInfo IDs must be strings`);
+
+		// Handle unknown package
+		if(id === UNKNOWN_ID) {
+			this.set_unknown();
+			return;
+		}
 
 		// If we need to auto-detect the type, and find a key separator, we should parse the ID as a key instead
 		if(type === null) {
 			if(this.from_key(id, /*fail=*/false))
-				return; // from_key returning 'true' means that it succeeded and has set the 'id' and 'type' successfuly
+				return; // from_key returning 'true' means that it succeeded and has called set(id, type) successfuly
 		}
 
 		// Validate ID
-		if(!PACKAGE_ID_REGEX.test(id))
-			throw `${PACKAGE_TITLE}: Invalid package ID '${id}'`;
+		if(!this.constructor.is_valid_id(id))
+			throw new Error(`${PACKAGE_TITLE}: Invalid package ID '${id}'`);
 
 		// Validate type
 		if(type !== null && !PACKAGE_TYPES.has(type))
-			throw `${PACKAGE_TITLE}: Package type for '${id}' must belong to the PACKAGE_TYPES enum, but got '${type}'.`;
+			throw new Error(`${PACKAGE_TITLE}: Package type for '${id}' must belong to the PACKAGE_TYPES enum, but got '${type}'.`);
 
 		// Store in instance
 		this.id = id;
@@ -244,7 +260,7 @@ export class PackageInfo {
 
 		if(split.length !== 2) {
 			if(fail)
-				throw `Error: Invalid key '${key}'`;
+				throw new Error(`${PACKAGE_TITLE}: Invalid key '${key}'`);
 			return false;
 		}
 
@@ -304,7 +320,7 @@ export class PackageInfo {
 
 	get title() {
 		if(!this.exists)
-			return this.unknown_title;
+			return this.constructor.unknown_title;
 
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
@@ -312,7 +328,7 @@ export class PackageInfo {
 			case PACKAGE_TYPES.WORLD :
 				return this.data.title;
 			default:
-				return this.unknown_title;
+				return this.constructor.unknown_title;
 		}
 	}
 

@@ -11,18 +11,18 @@ import {PACKAGE_TITLE} from '../consts.js';
 export const EnumValue = function(enum_cls, name, value, sort=true) {
 	// Sanity check for a frozen object
 	if(Object.isFrozen(enum_cls))
-		throw `${PACKAGE_TITLE}: Enum '${enum_cls.name}' is frozen.`;
+		throw new Error(`${PACKAGE_TITLE}: Enum '${enum_cls.name}' is frozen.`);
 
 	// Validate name
 	if(name !== name.toUpperCase())
-		throw `${PACKAGE_TITLE}: Enum keys must be all uppercase.`;
+		throw new Error(`${PACKAGE_TITLE}: Enum keys must be all uppercase.`);
 
 	// We use an eval here to coerce the browser to display more readable console output
 	const value_cls = Function("x", `return class ${name} extends x {}`)(enum_cls.value_cls);
 	const value_obj = new value_cls();
 
 	if(value_obj.name != name)
-		throw `${PACKAGE_TITLE}: Incorrect value_obj name ${value_obj.name}. Expected ${name}.`;
+		throw new Error(`${PACKAGE_TITLE}: Incorrect value_obj name ${value_obj.name}. Expected ${name}.`);
 
 	// If we were provided a value, add it
 	if(value !== undefined)
@@ -36,13 +36,13 @@ export const EnumValue = function(enum_cls, name, value, sort=true) {
 
 	// Store instance into enum
 	if(name in enum_cls)
-		throw `${PACKAGE_TITLE}: Name '${name}' is already present in ${enum_cls.name}.`
+		throw new Error(`${PACKAGE_TITLE}: Name '${name}' is already present in ${enum_cls.name}.`);
 	enum_cls[name] = value_obj;
 
 	// Store value->object mapping too, if a value was provided
 	if(value !== undefined) {
 		if(enum_cls.reverse.has(value))
-			throw `${PACKAGE_TITLE}: Value '${value}' is already present in ${enum_cls.name}.`;
+			throw new Error(`${PACKAGE_TITLE}: Value '${value}' is already present in ${enum_cls.name}.`);
 		enum_cls.reverse.set(value, value_obj);
 	}
 
@@ -63,11 +63,11 @@ export const Enum = function(name, collection, freeze=true) {
 
 	// Validate name
 	if(typeof name !== "string")
-		throw `${PACKAGE_TITLE}: Enum name must be a string`;
+		throw new Error(`${PACKAGE_TITLE}: Enum name must be a string`);
 
 	// Validate collection
 	if(typeof collection !== "object")
-		throw `${PACKAGE_TITLE}: Enum collection must be a dictionary or an array`;
+		throw new Error(`${PACKAGE_TITLE}: Enum collection must be a dictionary or an array`);
 
 	const has_value = !(collection instanceof Array);
 
@@ -100,7 +100,7 @@ export const Enum = function(name, collection, freeze=true) {
 
 				// Fail or return default value
 				if(dflt === undefined)
-					throw `${PACKAGE_TITLE}: '${value}' is not a valid key or value for the enum ${name}.`;
+					throw new Error(`${PACKAGE_TITLE}: '${value}' is not a valid key or value for the enum ${name}.`);
 
 				return dflt;
 			}
