@@ -11,23 +11,23 @@ import { IS_UNITTEST, PACKAGE_ID, PACKAGE_TITLE } from "../consts.js";
 // but also still allow libWrapper to work fine without the rollup step.
 
 /*#if _ROLLUP
-import en_json from '../../lang/en.json';
-const i18nLangs = $_I18N_LANGS;
-const langBaseUrl = (!import.meta?.url?.endsWith(`dist/${PACKAGE_ID}.js`)) ? './lang' : '../lang';
+	import en_json from '../../lang/en.json';
+	const i18nLangs = $_I18N_LANGS;
+	const langBaseUrl = (!import.meta?.url?.endsWith(`dist/${PACKAGE_ID}.js`)) ? './lang' : '../lang';
 //#else */
-const langBaseUrl = '../../lang';
-let en_json;
-if(IS_UNITTEST) {
-	// Use readFileSync, supported by node
-	const fs = await import('fs');
-	const en_file = fs.readFileSync('lang/en.json'); // readFileSync does not use a relative path
-	en_json = JSON.parse(en_file);
-}
-else {
-	// Use fetch - supported by browsers
-	const request = await fetch(new URL(`${langBaseUrl}/en.json`, import.meta.url));
-	en_json = await request.json();
-}
+	const langBaseUrl = '../../lang';
+	let en_json;
+	if(IS_UNITTEST) {
+		// Use readFileSync, supported by node
+		const fs = await import('fs');
+		const en_file = fs.readFileSync('lang/en.json'); // readFileSync does not use a relative path
+		en_json = JSON.parse(en_file);
+	}
+	else {
+		// Use fetch - supported by browsers
+		const request = await fetch(new URL(`${langBaseUrl}/en.json`, import.meta.url));
+		en_json = await request.json();
+	}
 //#endif
 
 
@@ -35,9 +35,9 @@ else {
 export class i18n {
 	static async _fetch(lang) {
 		/*#if _ROLLUP
-		// Avoid unnecessary requests if we know they're just going to 404
-		if(Array.isArray(i18nLangs) && !i18nLangs.includes(lang))
-			return null;
+			// Avoid unnecessary requests if we know they're just going to 404
+			if(Array.isArray(i18nLangs) && !i18nLangs.includes(lang))
+				return null;
 		//#endif */
 
 		// Fetch language JSONs, if any
