@@ -14,7 +14,7 @@ export const game_user_data = function(return_null=false) {
 		return orig_game_user_data;
 
 	// Grab the user ID
-	const userid = game.userId ?? game.data.userId;
+	const userid = game?.userId ?? game?.data?.userId;
 	if(!userid) {
 		if(return_null)
 			return null;
@@ -22,7 +22,7 @@ export const game_user_data = function(return_null=false) {
 	}
 
 	// Find user in game.data.users
-	const user_data = game.data.users.find((x) => { return x._id == userid });
+	const user_data = game?.data?.users?.find((x) => { return x._id == userid });
 	if(!user_data) {
 		if(return_null)
 			return null;
@@ -53,7 +53,7 @@ export const game_user_can = function(action, return_null=false) {
 	if(action in user_data.permissions) return user_data.permissions[action];
 
 	// Otherwise, check the role's permissions
-	const game_permissions_str = game.data.settings.find((x) => { return x.key === 'core.permissions'});
+	const game_permissions_str = game?.data?.settings?.find((x) => { return x.key === 'core.permissions'});
 	if(game_permissions_str?.value) {
 		const game_permissions = JSON.parse(game_permissions_str.value);
 
