@@ -401,19 +401,27 @@ export class PackageInfo {
 	get compatible_with_core() {
 		const versions = this.core_version_range;
 		const fvtt_version = game_version(/*return_null=*/ true);
-		if(!versions || !fvtt_version)
+		const fvtt_major = fvtt_version?.split('.')[0];
+
+		if(!versions || !fvtt_version || !fvtt_major)
 			return true; // assume it is compatible if we aren't sure
 
 		// Check if the core version is between the minimum and maximum version
 		const [min, max] = versions;
 
 		// Minimum version
-		if(min && min !== fvtt_version && !isNewerVersion(fvtt_version, min))
-			return false;
+		if(min) {
+			const fvtt_min = min.includes('.') ? fvtt_version : fvtt_major;
+			if(min !== fvtt_min && !isNewerVersion(fvtt_min, min))
+				return false;
+		}
 
 		// Maximum version
-		if(max && isNewerVersion(fvtt_version, max))
-			return false;
+		if(max) {
+			const fvtt_max = max.includes('.') ? fvtt_version : fvtt_major;
+			if(isNewerVersion(fvtt_max, max))
+				return false;
+		}
 
 		// Done
 		return true;
