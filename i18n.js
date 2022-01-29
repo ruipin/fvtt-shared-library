@@ -3,7 +3,9 @@
 
 'use strict';
 
-import { IS_UNITTEST, PACKAGE_ID, PACKAGE_TITLE } from "../consts.js";
+import { IS_UNITTEST, PACKAGE_ID } from "../consts.js";
+import { game_settings_get } from "./polyfill.js";
+import { Log } from "./log.js";
 
 
 // We want to load the EN language by default, in order to use it for polyfill while i18n hasn't loaded yet
@@ -33,6 +35,9 @@ import { IS_UNITTEST, PACKAGE_ID, PACKAGE_TITLE } from "../consts.js";
 
 // Polyfill game.i18n until libWrapper initialises
 export class i18n {
+	/*
+	 * Initialisation
+	 */
 	static async _fetch(lang) {
 		/*#if _ROLLUP
 			// Avoid unnecessary requests if we know they're just going to 404
@@ -51,7 +56,7 @@ export class i18n {
 			return request.json();
 		}
 		catch(e) {
-			console.warn(`${PACKAGE_TITLE}: Failed to load or parse ${url.href}.`, e);
+			Log.warn$?.(`Failed to load or parse ${url.href}.`, e);
 			return null;
 		}
 	}
@@ -65,15 +70,12 @@ export class i18n {
 
 		try {
 			// client-scoped setting, but we do this before game.settings has initialised so have to grab it manually
-			const clientLanguageSetting = localStorage?.['core.language'];
-			if(clientLanguageSetting) {
-				const clientLanguage = JSON.parse(clientLanguageSetting);
-				if(clientLanguage && clientLanguage !== 'en')
-					langs.push(clientLanguage);
-			}
+			const clientLanguage = game_settings_get('core', 'language', /*always_fallback=*/ true, /*return_null=*/ false);
+			if(clientLanguage && clientLanguage !== 'en')
+				langs.push(clientLanguage);
 		}
 		catch(e) {
-			console.debug(`${PACKAGE_TITLE}: Could not find or parse client language settings.`);
+			Log.debug$?.(`Could not find or parse client language settings.`);
 		}
 
 		const serverLanguage = game?.i18n?.lang;
@@ -93,6 +95,19 @@ export class i18n {
 		}
 	}
 
+	static on_ready() {
+		// Allow garbage collection of JSONs
+		delete this.jsons;
+
+		//#if !_ROLLUP
+			en_json = undefined;
+		//#endif
+	}
+
+
+	/*
+	 * Polyfill
+	 */
 	static localize(key) {
 		// Try real i18n library
 		if(game?.i18n) {
@@ -118,7 +133,7 @@ export class i18n {
 			return split.reduce((x,y) => x?.[y], en_json) ?? key;
 		}
 		catch(e) {
-			console.error(e);
+			Log.error(e);
 			return key;
 		}
 	}
@@ -140,8 +155,12 @@ export class i18n {
 			return localize.replace(/\{(.*?)\}/g, (_,y) => args?.[y]);
 		}
 		catch(e) {
-			console.error(e);
+			Log.error(e);
 			return key;
 		}
 	}
 }
+
+// Set up a hook to cleanup once we are no longer a polyfill
+if(!IS_UNITTEST)
+	Hooks.once('ready', i18n.on_ready.bind(i18n));
