@@ -167,13 +167,13 @@ export class Log {
 		return CURRENT_VERBOSITY ?? VERBOSITY.WARNING;
 	}
 
-	static set verbosity(value) {
+	static set verbosity(in_value) {
 		// Convert to VERBOSITY type if it exists
-		value = VERBOSITY.get(value, /*default=*/ value);
+		const value = VERBOSITY.get(in_value, /*default=*/ parseInt(in_value));
 
 		// Sanity check types
 		if(!VERBOSITY.has(value) && !Number.isInteger(value))
-			throw new ERRORS.internal("Parameter 'value' must be a 'VERBOSITY' enum value, or an integer.");
+			throw new ERRORS.internal(`Parameter 'value' must be a 'VERBOSITY' enum value or an integer, but got '${in_value}'.`);
 
 		// Store verbosity
 		CURRENT_VERBOSITY = value;
@@ -202,18 +202,19 @@ export class Log {
 			return;
 
 		// Grab verbosity from settings
-		let value = game_settings_get(PACKAGE_ID, 'log-verbosity', /*always_fallback=*/ true, /*return_null=*/ true);
+		const value = game_settings_get(PACKAGE_ID, 'log-verbosity', /*always_fallback=*/ true, /*return_null=*/ true);
 
 		// We do nothing if the setting is null/undefined
-		if(value === undefined || value === null) {
-			// If 'force', we should regenerate the log aliases regardless of the fact we're not changing the verbosity
-			if(force)
-				generate_log_aliases();
-
+		if(value === undefined || value === null)
 			return;
-		}
 
-		this.verbosity = value;
+		// Use try-catch in case something goes wrong, as this method runs in critical code paths...
+		try {
+			this.verbosity = value;
+		}
+		catch(e) {
+			console.error(`${PACKAGE_TITLE}: Unable to set logging verbosity.\n`, e);
+		}
 	}
 
 	static enabled(verbosity=null) {
@@ -260,6 +261,7 @@ export class Log {
 // Generate static aliases
 generate_verbosity_aliases();
 generate_enabled_aliases();
+generate_log_aliases();
 
 // Initialise
 Log.init(/*force=*/ true);

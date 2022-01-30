@@ -124,25 +124,31 @@ export const game_settings_get = function(namespace, key, always_fallback=false,
 			throw e;
 	}
 
-
 	// Access localStorage to get the client-scoped version of the setting
 	const storage_key = `${namespace}.${key}`;
 
-	const data = globalThis.localStorage?.[storage_key];
-	if(data === undefined || data === null) {
+	try {
+		const data = globalThis.localStorage?.[storage_key];
+		if(data === undefined || data === null) {
+			if(return_null)
+				return null;
+			throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}'`);
+		}
+
+		// Parse the localStorage data the same way as Core does
+		const json_data = JSON.parse(data)
+		if(json_data === undefined || json_data === null) {
+			if(return_null)
+				return null;
+			throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}'`);
+		}
+
+		// Done
+		return json_data;
+	}
+	catch(e) {
 		if(return_null)
 			return null;
-		throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}'`);
+		throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}' due to exception in polyfill:`, e);
 	}
-
-	// Parse the localStorage data the same way as Core does
-	const json_data = JSON.parse(data)
-	if(json_data === undefined || json_data === null) {
-		if(return_null)
-			return null;
-		throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}'`);
-	}
-
-	// Done
-	return json_data;
 }

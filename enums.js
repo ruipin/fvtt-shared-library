@@ -91,9 +91,19 @@ export const Enum = function(name, collection, freeze=true) {
 						return res;
 				}
 
-				// If we got something else, this might be the actual enum "value" field, so try using the 'reverse' Map
+				// If we got something else, this might be the actual enum "value" field
 				{
-					const reverse = this.reverse.get(value);
+					// Check the reverse map
+					let reverse = this.reverse.get(value);
+
+					// Also try casting to int, since values are often numbers
+					if(reverse === undefined && typeof value === 'string') {
+						const value_int = parseInt(value);
+						if(Number.isInteger(value_int))
+							reverse = this.reverse.get(value_int);
+					}
+
+					// Return the enum value if we found it
 					if(reverse !== undefined)
 						return reverse;
 				}
