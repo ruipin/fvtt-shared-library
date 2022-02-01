@@ -21,8 +21,7 @@ export const PACKAGE_TYPES = Enum('PackageType', [
 
 //*********************
 // Constants
-const MAIN_KEY_SEPARATOR = ':';
-const KEY_SEPARATORS = [':','~'];
+const KEY_SEPARATOR = ':';
 const UNKNOWN_ID = '\u00ABunknown\u00BB';
 const PACKAGE_ID_REGEX = new RegExp("^[a-z0-9_-]+$", "i");
 const STACK_TRACE_REGEX = /^.*?\/(worlds|systems|modules)\/(.+?)(?=\/).*?$/igm;
@@ -123,7 +122,7 @@ export class PackageInfo {
 		const set = new Set();
 
 		foreach_package_in_stack_trace((id, type, match) => {
-			const key = `${type.lower}${MAIN_KEY_SEPARATOR}${id}`; // see 'get key' below
+			const key = `${type.lower}${KEY_SEPARATOR}${id}`; // see 'get key' below
 
 			if(set.has(key))
 				return true;
@@ -145,6 +144,24 @@ export class PackageInfo {
 		return modules;
 	}
 
+	static is_valid_key_or_id(key_or_id) {
+		return this.is_valid_key(key_or_id) || this.is_valid_id(key_or_id);
+	}
+
+	static is_valid_key(key) {
+		if(!key || typeof key !== 'string')
+			return false;
+
+		const [id, type] = this.parse_key(key);
+		if(!id || !type)
+			return false;
+
+		if(!this.is_valid_id(id))
+			return false;
+
+		return true;
+	}
+
 	static is_valid_id(id) {
 		if(!id || typeof id !== 'string')
 			return false;
@@ -154,6 +171,18 @@ export class PackageInfo {
 
 		return true;
 	}
+
+	static parse_key(key) {
+		const split = key.split(KEY_SEPARATOR);
+		if(split.length !== 2)
+			return [null, null];
+
+		const id   = split[1];
+		const type = PACKAGE_TYPES.get(split[0]);
+
+		return [id, type];
+	}
+
 
 
 	/*
@@ -188,7 +217,7 @@ export class PackageInfo {
 				return; // from_key returning 'true' means that it succeeded and has called set(id, type) successfuly
 		}
 
-		// Validate ID
+		// Validate ID (if we got this far, 'id' must be an ID, and not a key)
 		if(!this.constructor.is_valid_id(id))
 			throw new Error(`${PACKAGE_TITLE}: Invalid package ID '${id}'`);
 
@@ -251,26 +280,18 @@ export class PackageInfo {
 
 	// Conversion to/from key
 	from_key(key, fail=true) {
-		let split;
-		for(const sep of KEY_SEPARATORS) {
-			split = key.split(sep);
-			if(split.length === 2)
-				break;
-		}
+		const [id, type] = this.constructor.parse_key(key);
 
-		if(split.length !== 2) {
+		if(!id || !type) {
 			if(fail)
 				throw new Error(`${PACKAGE_TITLE}: Invalid key '${key}'`);
 			return false;
 		}
 
-		const id   = split[1];
-		const type = PACKAGE_TYPES[split[0]];
-
 		this.set(id, type);
-
 		return true;
 	}
+
 
 	// Cast to string
 	toString() {
@@ -333,7 +354,7 @@ export class PackageInfo {
 	}
 
 	get key() {
-		return `${this.type.lower}${MAIN_KEY_SEPARATOR}${this.id}`;
+		return `${this.type.lower}${KEY_SEPARATOR}${this.id}`;
 	}
 
 	get type_i18n() {
