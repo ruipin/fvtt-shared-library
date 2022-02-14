@@ -6,6 +6,7 @@
 import {PACKAGE_ID, PACKAGE_TITLE} from '../consts.js';
 import {Enum} from './enums.js';
 import {i18n} from './i18n.js';
+import {Log} from './log.js';
 import {game_version} from './polyfill.js';
 
 
@@ -33,9 +34,18 @@ export let IGNORE_PACKAGE_IDS = PACKAGE_ID;
 
 //*********************
 // Utility methods
+
+/**
+ * @returns {boolean} Returns 'false' if aborted early (because of 'matchFn' returning 'false'), 'true' if executed to completion.
+ */
 const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids) {
+	// If supplied, stack_trace must be a string
+	if(stack_trace !== undefined) {
+		if(typeof stack_trace !== 'string')
+			throw new Error(`${PACKAGE_TITLE}: Parameter 'stack_trace' must be a string, got ${typeof stack_trace}.`);
+	}
 	// Collect stack trace if none passed
-	if(stack_trace === undefined) {
+	else {
 		const old_stack_limit = Error.stackTraceLimit;
 
 		try {
@@ -45,15 +55,20 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 		finally {
 			Error.stackTraceLimit = old_stack_limit;
 		}
+
+		// Simply exit if not a string
+		if(typeof stack_trace !== 'string')
+			return true;
 	}
 
-	if(!stack_trace || typeof stack_trace !== 'string')
-		throw new Error(`${PACKAGE_TITLE}: Could not collect stack trace.`);
+	// If the stack trace is empty, just exit
+	if(!stack_trace)
+		return true;
 
 	// Apply regex onto stack trace
 	const matches = stack_trace.matchAll(STACK_TRACE_REGEX);
 	if(!matches)
-		return;
+		return true;
 
 	// Find matches
 	for(const match of matches) {
@@ -102,6 +117,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 			return false;
 	}
 
+	// Done
 	return true;
 }
 
