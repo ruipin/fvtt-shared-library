@@ -432,7 +432,12 @@ export class PackageInfo {
 		if(!data)
 			return null;
 
-		return [data.minimumCoreVersion, data.compatibleCoreVersion];
+		// FVTT v10 and newer
+		if(data.compatibility)
+			return [data.compatibility.minimum, data.compatibility.verified, data.compatibility.maximum];
+
+		// FVTT v9 and older
+		return [data.minimumCoreVersion, data.compatibleCoreVersion, null];
 	}
 
 	get compatible_with_core() {
@@ -444,7 +449,7 @@ export class PackageInfo {
 			return true; // assume it is compatible if we aren't sure
 
 		// Check if the core version is between the minimum and maximum version
-		const [min, max] = versions;
+		const [min, verif, max] = versions;
 
 		// Minimum version
 		if(min) {
@@ -453,10 +458,17 @@ export class PackageInfo {
 				return false;
 		}
 
+		// Verified version
+		if(verif) {
+			const fvtt_verif = verif.includes('.') ? fvtt_version : fvtt_major;
+			if(isNewerVersion(fvtt_verif, verif))
+				return false;
+		}
+
 		// Maximum version
 		if(max) {
 			const fvtt_max = max.includes('.') ? fvtt_version : fvtt_major;
-			if(isNewerVersion(fvtt_max, max))
+			if(fvtt_max == max || isNewerVersion(fvtt_max, max))
 				return false;
 		}
 
