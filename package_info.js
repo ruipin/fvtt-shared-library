@@ -341,9 +341,9 @@ export class PackageInfo {
 
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
-				return game.modules.get(this.id)?.data;
+				return game.modules.get(this.id);
 			case PACKAGE_TYPES.SYSTEM:
-				return game.data.system.data;
+				return game.data.system;
 			case PACKAGE_TYPES.WORLD:
 				return game.data.world;
 			default:
