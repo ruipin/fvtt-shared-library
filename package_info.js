@@ -339,11 +339,14 @@ export class PackageInfo {
 		if(!this.exists)
 			return null;
 
+		const fvtt_gen = globalThis.game.release?.generation;
+		const v10_or_newer = (fvtt_gen && fvtt_gen >= 10);
+
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
-				return game.modules.get(this.id)?.data;
+				return v10_or_newer ? game.modules.get(this.id) : game.modules.get(this.id)?.data;
 			case PACKAGE_TYPES.SYSTEM:
-				return game.data.system.data;
+				return v10_or_newer ? game.data.system : game.data.system.data;
 			case PACKAGE_TYPES.WORLD:
 				return game.data.world;
 			default:
