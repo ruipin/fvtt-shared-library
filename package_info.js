@@ -82,7 +82,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 		let match_id, match_type;
 
 		if(type === 'worlds') {
-			const game_world_id = game?.data?.world?.id;
+			const game_world_id = globalThis.game?.data?.world?.id;
 			if(game_world_id && name != game_world_id)
 				continue;
 
@@ -90,7 +90,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 			match_type = PACKAGE_TYPES.WORLD;
 		}
 		else if(type === 'systems') {
-			const game_system_id = game?.data?.system?.id;
+			const game_system_id = globalThis.game?.data?.system?.id;
 			if(game_system_id && name != game_system_id)
 				continue;
 
@@ -98,7 +98,7 @@ const foreach_package_in_stack_trace = function(matchFn, stack_trace, ignore_ids
 			match_type = PACKAGE_TYPES.SYSTEM;
 		}
 		else if(type === 'modules') {
-			if(game?.modules && !game.modules.has(name))
+			if(globalThis.game?.modules && !globalThis.game.modules.has(name))
 				continue;
 
 			if(ignore_ids && (name === ignore_ids || ignore_ids?.includes?.(name)))
@@ -274,7 +274,7 @@ export class PackageInfo {
 
 	detect_type() {
 		// We need to support this even when 'game.modules' hasn't been initialised yet
-		if(!game?.modules) {
+		if(!globalThis.game?.modules) {
 			if(this.id === PACKAGE_ID)
 				this.type = PACKAGE_TYPES.MODULE;
 			else
@@ -283,11 +283,11 @@ export class PackageInfo {
 			return;
 		}
 
-		if(game.modules?.get(this.id)?.active)
+		if(globalThis.game.modules?.get(this.id)?.active)
 			this.type = PACKAGE_TYPES.MODULE;
-		else if(this.id === game.data?.system?.id)
+		else if(this.id === globalThis.game.data?.system?.id)
 			this.type = PACKAGE_TYPES.SYSTEM;
-		else if(this.id === game.data?.world?.id)
+		else if(this.id === globalThis.game.data?.world?.id)
 			this.type = PACKAGE_TYPES.WORLD;
 		else
 			this.type = PACKAGE_TYPES.UNKNOWN;
@@ -325,11 +325,11 @@ export class PackageInfo {
 	get exists() {
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
-				return game.modules.get(this.id)?.active;
+				return globalThis.game?.modules?.get(this.id)?.active;
 			case PACKAGE_TYPES.SYSTEM:
-				return game.data.system.id === this.id;
+				return globalThis.game?.data?.system?.id === this.id;
 			case PACKAGE_TYPES.WORLD:
-				return game.data.world.id === this.id;
+				return globalThis.game?.data?.world?.id === this.id;
 			default:
 				return false;
 		}
@@ -339,16 +339,16 @@ export class PackageInfo {
 		if(!this.exists)
 			return null;
 
-		const fvtt_gen = globalThis.game.release?.generation;
+		const fvtt_gen = globalThis.game?.release?.generation;
 		const v10_or_newer = (fvtt_gen && fvtt_gen >= 10);
 
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
-				return v10_or_newer ? game.modules.get(this.id) : game.modules.get(this.id)?.data;
+				return v10_or_newer ? globalThis.game?.modules?.get(this.id) : globalThis.game?.modules?.get(this.id)?.data;
 			case PACKAGE_TYPES.SYSTEM:
-				return v10_or_newer ? game.data.system : game.data.system.data;
+				return v10_or_newer ? globalThis.game?.data?.system : globalThis.game?.data?.system?.data;
 			case PACKAGE_TYPES.WORLD:
-				return game.data.world;
+				return globalThis.game?.data?.world;
 			default:
 				return null;
 		}
