@@ -68,15 +68,11 @@ import {PACKAGE_TITLE, PACKAGE_ID} from '../consts.js';
 			if(!mdl)
 				throw_error(`Could not find 'game.modules.get("${PACKAGE_ID}")'`);
 
-			const manifest = mdl.data;
-			if(!manifest)
-				throw_error(`Could not find 'game.modules.get("${PACKAGE_ID}").data'`);
-
 			// Grab git version (no need to validate)
-			const git_hash = manifest.flags?.git_version;
+			const git_hash = mdl.flags?.git_version ?? mdl.data?.flags?.git_version;
 
 			// Grab version string
-			const version_str = manifest.version;
+			const version_str = mdl.version ?? mdl.data?.version;
 			if(!version_str)
 				throw_error("Unable to find version string inside package manifest");
 
