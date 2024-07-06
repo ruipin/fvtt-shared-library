@@ -7,7 +7,7 @@ import {PACKAGE_ID, PACKAGE_TITLE} from '../consts.js';
 import {Enum} from './enums.js';
 import {i18n} from './i18n.js';
 import {Log} from './log.js';
-import {game_version} from './polyfill.js';
+import {game_version, isNewerVersion} from './polyfill.js';
 
 
 //*********************

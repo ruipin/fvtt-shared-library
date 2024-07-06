@@ -152,3 +152,8 @@ export const game_settings_get = function(namespace, key, always_fallback=false,
 		throw new ERRORS.internal(`Unable to obtain the setting '${storage_key}' due to exception in polyfill:`, e);
 	}
 }
+
+// Polyfill to support FVTT<12 and FVTT>=12
+export const isNewerVersion = function(...args) {
+	return foundry?.utils?.isNewerVersion?.(...args) ?? globalThis.isNewerVersion(...args);
+}
