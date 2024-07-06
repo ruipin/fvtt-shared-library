@@ -405,6 +405,12 @@ export class PackageInfo {
 		return (this.type == PACKAGE_TYPES.MODULE) ? this.id : this.key;
 	}
 
+	get logIdVersion() {
+		const version = this.version;
+		const logId = this.logId;
+		return version ? `${logId}(${version})` : logId;
+	}
+
 	get settingsName() {
 		switch(this.type) {
 			case PACKAGE_TYPES.MODULE:
