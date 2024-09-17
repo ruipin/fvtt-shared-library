@@ -61,7 +61,7 @@ export class i18n {
 		}
 	}
 
-	static async init() {
+	static init() {
 		// Default members
 		this.jsons = [];
 
@@ -82,17 +82,21 @@ export class i18n {
 		if(serverLanguage && serverLanguage !== 'en')
 			langs.push(serverLanguage);
 
-		// Fetch language JSONs
+		// Fetch language JSONs asynchronously
+		let promises = [];
 		if(langs.length > 0) {
-			// Await all fetches
-			const results = await Promise.all(langs.map((x)=>this._fetch(x)));
-
-			// Store the valid results in this.jsons
-			for(const json of results) {
-				if(json)
-					this.jsons.push(json);
-			}
+			// Fetch languages
+			promises = langs.map((lang) => {
+				this._fetch(lang).then(
+					json => {
+						Log.debug$?.(`Loaded ${lang} language JSON.`);
+						if(json)
+							this.jsons.push(json);
+					}
+				);
+			});
 		}
+		return Promise.allSettled(promises);
 	}
 
 	static on_ready() {
