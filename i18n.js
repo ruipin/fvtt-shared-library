@@ -38,41 +38,17 @@ export class i18n {
 	/*
 	 * Initialisation
 	 */
-	static async _fetch(lang) {
-		/*#if _ROLLUP
-			// Avoid unnecessary requests if we know they're just going to 404
-			if(Array.isArray(i18nLangs) && !i18nLangs.includes(lang))
-				return null;
-		//#endif */
-
-		// Fetch language JSONs, if any
-		try {
-			const url = new URL(`${langBaseUrl}/${lang}.json`, import.meta.url);
-
-			const request = await fetch(url);
-			if(request.status !== 200 || !request.ok)
-				return null;
-
-			return request.json();
-		}
-		catch(e) {
-			Log.warn$?.(`Failed to load or parse ${url.href}.`, e);
-			return null;
-		}
-	}
-
 	static init() {
 		// Default members
-		this.jsons = [];
+		this.langs = [];
+		this.jsons = {};
 
 		// Load languages
-		const langs = [];
-
 		try {
 			// client-scoped setting, but we do this before game.settings has initialised so have to grab it manually
 			const clientLanguage = game_settings_get('core', 'language', /*always_fallback=*/ true, /*return_null=*/ false);
 			if(clientLanguage && clientLanguage !== 'en')
-				langs.push(clientLanguage);
+				this.langs.push(clientLanguage);
 		}
 		catch(e) {
 			Log.debug$?.(`Could not find or parse client language settings.`);
@@ -80,23 +56,7 @@ export class i18n {
 
 		const serverLanguage = game?.i18n?.lang;
 		if(serverLanguage && serverLanguage !== 'en')
-			langs.push(serverLanguage);
-
-		// Fetch language JSONs asynchronously
-		let promises = [];
-		if(langs.length > 0) {
-			// Fetch languages
-			promises = langs.map((lang) => {
-				this._fetch(lang).then(
-					json => {
-						Log.debug$?.(`Loaded ${lang} language JSON.`);
-						if(json)
-							this.jsons.push(json);
-					}
-				);
-			});
-		}
-		return Promise.allSettled(promises);
+			this.langs.push(serverLanguage);
 	}
 
 	static on_ready() {
@@ -112,6 +72,45 @@ export class i18n {
 	/*
 	 * Polyfill
 	 */
+	static _fetch(lang) {
+		// If the JSON is cached, return it
+		const cached_json = this.jsons[lang];
+		if(cached_json !== undefined)
+			return cached_json;
+
+		/*#if _ROLLUP
+			// Avoid unnecessary requests if we know they're just going to 404
+			if(Array.isArray(i18nLangs) && !i18nLangs.includes(lang))
+				return null;
+		//#endif */
+
+		// Fetch language JSON if this is the first time we're using it
+		const url = new URL(`${langBaseUrl}/${lang}.json`, import.meta.url);
+
+		try {
+			Log.debug$?.(`Fetching ${lang} language JSON...`);
+
+			const request = new XMLHttpRequest();
+			request.open("GET", url, /*async=*/ false);
+			request.send(null);
+
+			if(request.status !== 200)
+				throw new Error(`Unexpected request status ${request.status}`);
+
+			Log.debug$?.(`Fetched ${lang} language JSON.`);
+			const json = JSON.parse(request.responseText);
+
+			// Cache and return JSON
+			this.jsons[lang] = json;
+			return json;
+		}
+		catch(e) {
+			Log.warn$?.(`Failed to load or parse ${url.href}. Skipping language.`, e);
+			this.jsons[lang] = null;
+			return null;
+		}
+	}
+
 	static localize(key) {
 		// Try real i18n library
 		if(game?.i18n) {
@@ -125,12 +124,14 @@ export class i18n {
 			const split = key.split('.');
 
 			// Try main language first
-			if(this.jsons) {
-				for(const json of this.jsons) {
-					const res = split.reduce((x,y) => x?.[y], json);
-					if(res)
-						return res;
-				}
+			for(const lang of this.langs) {
+				const json = this._fetch(lang);
+				if(!json)
+					continue;
+
+				const res = split.reduce((x,y) => x?.[y], json);
+				if(res)
+					return res;
 			}
 
 			// Default to just returning the key
