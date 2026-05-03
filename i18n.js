@@ -124,14 +124,16 @@ export class i18n {
 			const split = key.split('.');
 
 			// Try main language first
-			for(const lang of this.langs) {
-				const json = this._fetch(lang);
-				if(!json)
-					continue;
+			if(typeof this.langs !== 'undefined') {
+				for(const lang of this.langs) {
+					const json = this._fetch(lang);
+					if(!json)
+						continue;
 
-				const res = split.reduce((x,y) => x?.[y], json);
-				if(res)
-					return res;
+					const res = split.reduce((x,y) => x?.[y], json);
+					if(res)
+						return res;
+				}
 			}
 
 			// Default to just returning the key
